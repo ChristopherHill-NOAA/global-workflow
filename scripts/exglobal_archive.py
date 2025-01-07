@@ -17,6 +17,13 @@ def main():
     # Instantiate the Archive object
     archive = Archive(config)
 
+    # update these keys to be 3 digits if they are part of archive.task_config.keys
+    for key in ['OCNRES', 'ICERES']:
+        try:
+            archive.task_config[key] = f"{archive.task_config[key]:03d}"
+        except KeyError as ee:
+            logger.info(f"key ({key}) not found in archive.task_config!")
+
     # Pull out all the configuration keys needed to run the rest of archive steps
     keys = ['ATARDIR', 'current_cycle', 'FHMIN', 'FHMAX', 'FHOUT', 'RUN', 'PDY',
             'DO_VERFRAD', 'DO_VMINMON', 'DO_VERFOZN', 'DO_ICE', 'DO_PREP_OBS_AERO',
@@ -29,7 +36,7 @@ def main():
             'DOIAU', 'OCNRES', 'ICERES', 'NUM_SND_COLLECTIVES', 'FHOUT_WAV',
             'FHOUT_HF_WAV', 'FHMAX_WAV', 'FHMAX_HF_WAV', 'FHMAX_WAV_GFS',
             'restart_interval_gdas', 'restart_interval_gfs',
-            'DO_AERO_ANL', 'DO_AERO_FCST', 'DO_CA', 'DOIBP_WAV', 'DO_JEDIOCNVAR',
+            'DO_AERO_ANL', 'DO_AERO_FCST', 'DO_CA', 'DOIBP_WAV', 'DO_JEDIOCNVAR', 'DOHYBVAR_OCN',
             'NMEM_ENS', 'DO_JEDIATMVAR', 'DO_VRFY_OCEANDA', 'FHMAX_FITS', 'waveGRD',
             'IAUFHRS', 'DO_FIT2OBS', 'NET', 'FHOUT_HF_GFS', 'FHMAX_HF_GFS', 'REPLAY_ICS',
             'OFFSET_START_HOUR', 'ARCH_EXPDIR', 'EXPDIR', 'ARCH_EXPDIR_FREQ', 'ARCH_HASHES',
@@ -37,16 +44,15 @@ def main():
 
     archive_dict = AttrDict()
     for key in keys:
-        archive_dict[key] = archive.task_config.get(key)
-        if archive_dict[key] is None:
-            print(f"Warning: key ({key}) not found in task_config!")
+        try:
+            archive_dict[key] = archive.task_config[key]
+        except KeyError as ee:
+            logger.warning(f"WARNING: key ({key}) not found in archive.task_config!")
 
     # Also import all COMIN* and COMOUT* directory and template variables
     for key in archive.task_config.keys():
-        if key.startswith("COM_") or key.startswith("COMIN_") or key.startswith("COMOUT_"):
+        if key.startswith(("COM_", "COMIN_", "COMOUT_")):
             archive_dict[key] = archive.task_config.get(key)
-            if archive_dict[key] is None:
-                print(f"Warning: key ({key}) not found in task_config!")
 
     with chdir(config.ROTDIR):
 
